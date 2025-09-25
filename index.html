@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Starlink Tariff</title>
+  <title>Internet Tariffs - Starlink & Spidernet</title>
   <style>
     * {
       margin: 0;
@@ -36,6 +36,46 @@
       position: relative;
       display: flex;
       flex-direction: column;
+    }
+
+    .tabs {
+      display: flex;
+      background-color: #333;
+      border-bottom: 2px solid #444;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 15px 20px;
+      background-color: #333;
+      color: #aaa;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tab:hover {
+      background-color: #3a3a3a;
+      color: #fff;
+    }
+
+    .tab.active {
+      background-color: #007acc;
+      color: #ffffff;
+    }
+
+    .tab-content {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+    }
+
+    .tab-content.active {
+      display: flex;
     }
 
     .image-viewer {
@@ -139,6 +179,11 @@
         height: calc(100vh - 40px);
       }
 
+      .tab {
+        padding: 18px 15px;
+        font-size: 14px;
+      }
+
       .nav-button {
         padding: 14px 18px;
         font-size: 18px;
@@ -172,108 +217,190 @@
 
 <body>
   <div class="container">
-    <div class="image-viewer" id="imageViewer">
-      <div class="image-container" id="imageContainer">
-        <div class="image-slide active">
-          <img src="assets/tarif-0.jpg" alt="Tariff Plan 1" id="image0">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('starlink')">Starlink</button>
+      <button class="tab" onclick="switchTab('spidernet')">Spidernet</button>
+    </div>
+
+    <!-- Starlink Tab Content -->
+    <div class="tab-content active" id="starlink-content">
+      <div class="image-viewer" id="starlink-viewer">
+        <div class="image-container" id="starlink-container">
+          <div class="image-slide active">
+            <img src="assets/starlink-tarif-0.jpg" alt="Starlink Tariff Plan 1">
+          </div>
+          <div class="image-slide">
+            <img src="assets/starlink-tarif-1.jpg" alt="Starlink Tariff Plan 2">
+          </div>
         </div>
-        <div class="image-slide">
-          <img src="assets/tarif-1.jpg" alt="Tariff Plan 2" id="image1">
+      </div>
+
+      <div class="navigation">
+        <button class="nav-button" id="starlink-prevBtn" onclick="previousImage('starlink')">‹</button>
+
+        <div class="indicators" id="starlink-indicators">
+          <div class="indicator active" onclick="goToImage('starlink', 0)"></div>
+          <div class="indicator" onclick="goToImage('starlink', 1)"></div>
         </div>
+
+        <div class="image-counter">
+          <span id="starlink-currentIndex">1</span> / <span id="starlink-totalImages">2</span>
+        </div>
+
+        <button class="nav-button" id="starlink-nextBtn" onclick="nextImage('starlink')">›</button>
       </div>
     </div>
 
-    <div class="navigation">
-      <button class="nav-button" id="prevBtn" onclick="previousImage()">‹</button>
-
-      <div class="indicators">
-        <div class="indicator active" onclick="goToImage(0)"></div>
-        <div class="indicator" onclick="goToImage(1)"></div>
+    <!-- Spidernet Tab Content -->
+    <div class="tab-content" id="spidernet-content">
+      <div class="image-viewer" id="spidernet-viewer">
+        <div class="image-container" id="spidernet-container">
+          <div class="image-slide active">
+            <img src="assets/spidernet-tarif-0.jpeg" alt="Spidernet Tariff Plan 1">
+          </div>
+          <div class="image-slide">
+            <img src="assets/spidernet-tarif-1.jpeg" alt="Spidernet Tariff Plan 2">
+          </div>
+        </div>
       </div>
 
-      <div class="image-counter">
-        <span id="currentIndex">1</span> / <span id="totalImages">2</span>
-      </div>
+      <div class="navigation">
+        <button class="nav-button" id="spidernet-prevBtn" onclick="previousImage('spidernet')">‹</button>
 
-      <button class="nav-button" id="nextBtn" onclick="nextImage()">›</button>
+        <div class="indicators" id="spidernet-indicators">
+          <div class="indicator active" onclick="goToImage('spidernet', 0)"></div>
+          <div class="indicator" onclick="goToImage('spidernet', 1)"></div>
+        </div>
+
+        <div class="image-counter">
+          <span id="spidernet-currentIndex">1</span> / <span id="spidernet-totalImages">2</span>
+        </div>
+
+        <button class="nav-button" id="spidernet-nextBtn" onclick="nextImage('spidernet')">›</button>
+      </div>
     </div>
   </div>
 
   <script>
-    let currentImageIndex = 0;
-    const totalImages = 2;
-    let touchStartX = 0;
-    let touchEndX = 0;
+    // State management for both services
+    const services = {
+      starlink: {
+        currentImageIndex: 0,
+        totalImages: 2,
+        touchStartX: 0,
+        touchEndX: 0
+      },
+      spidernet: {
+        currentImageIndex: 0,
+        totalImages: 2,
+        touchStartX: 0,
+        touchEndX: 0
+      }
+    };
 
-    const imageContainer = document.getElementById('imageContainer');
-    const indicators = document.querySelectorAll('.indicator');
-    const currentIndexSpan = document.getElementById('currentIndex');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const imageViewer = document.getElementById('imageViewer');
-    const imageSlides = document.querySelectorAll('.image-slide');
+    let activeService = 'starlink';
 
-    function updateDisplay() {
+    function switchTab(service) {
+      // Update active tab
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Update active content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`${service}-content`).classList.add('active');
+
+      activeService = service;
+      setupEventListeners();
+      updateDisplay(service);
+    }
+
+    function updateDisplay(service) {
+      const serviceData = services[service];
+      const imageSlides = document.querySelectorAll(`#${service}-container .image-slide`);
+      const indicators = document.querySelectorAll(`#${service}-indicators .indicator`);
+      const currentIndexSpan = document.getElementById(`${service}-currentIndex`);
+      const prevBtn = document.getElementById(`${service}-prevBtn`);
+      const nextBtn = document.getElementById(`${service}-nextBtn`);
+
       // Hide all images and show only the current one
       imageSlides.forEach((slide, index) => {
-        slide.classList.toggle('active', index === currentImageIndex);
+        slide.classList.toggle('active', index === serviceData.currentImageIndex);
       });
 
       // Update indicators
       indicators.forEach((indicator, index) => {
-        indicator.classList.toggle('active', index === currentImageIndex);
+        indicator.classList.toggle('active', index === serviceData.currentImageIndex);
       });
 
       // Update counter
-      currentIndexSpan.textContent = currentImageIndex + 1;
+      currentIndexSpan.textContent = serviceData.currentImageIndex + 1;
 
       // Update button states
-      prevBtn.disabled = currentImageIndex === 0;
-      nextBtn.disabled = currentImageIndex === totalImages - 1;
+      prevBtn.disabled = serviceData.currentImageIndex === 0;
+      nextBtn.disabled = serviceData.currentImageIndex === serviceData.totalImages - 1;
     }
 
-    function nextImage() {
-      if (currentImageIndex < totalImages - 1) {
-        currentImageIndex++;
-        updateDisplay();
+    function nextImage(service) {
+      const serviceData = services[service];
+      if (serviceData.currentImageIndex < serviceData.totalImages - 1) {
+        serviceData.currentImageIndex++;
+        updateDisplay(service);
       }
     }
 
-    function previousImage() {
-      if (currentImageIndex > 0) {
-        currentImageIndex--;
-        updateDisplay();
+    function previousImage(service) {
+      const serviceData = services[service];
+      if (serviceData.currentImageIndex > 0) {
+        serviceData.currentImageIndex--;
+        updateDisplay(service);
       }
     }
 
-    function goToImage(index) {
-      if (index >= 0 && index < totalImages) {
-        currentImageIndex = index;
-        updateDisplay();
+    function goToImage(service, index) {
+      const serviceData = services[service];
+      if (index >= 0 && index < serviceData.totalImages) {
+        serviceData.currentImageIndex = index;
+        updateDisplay(service);
       }
     }
 
-    // Touch/Swipe functionality
-    imageViewer.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
+    function setupEventListeners() {
+      // Remove existing listeners
+      const viewers = document.querySelectorAll('.image-viewer');
+      viewers.forEach(viewer => {
+        viewer.replaceWith(viewer.cloneNode(true));
+      });
 
-    imageViewer.addEventListener('touchend', (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
-    }, { passive: true });
+      // Add touch events to active service
+      const activeViewer = document.getElementById(`${activeService}-viewer`);
+      const serviceData = services[activeService];
 
-    function handleSwipe() {
+      activeViewer.addEventListener('touchstart', (e) => {
+        serviceData.touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      activeViewer.addEventListener('touchend', (e) => {
+        serviceData.touchEndX = e.changedTouches[0].screenX;
+        handleSwipe(activeService);
+      }, { passive: true });
+    }
+
+    function handleSwipe(service) {
+      const serviceData = services[service];
       const swipeThreshold = 50;
-      const diff = touchStartX - touchEndX;
+      const diff = serviceData.touchStartX - serviceData.touchEndX;
 
       if (Math.abs(diff) > swipeThreshold) {
         if (diff > 0) {
           // Swiped left - next image
-          nextImage();
+          nextImage(service);
         } else {
           // Swiped right - previous image
-          previousImage();
+          previousImage(service);
         }
       }
     }
@@ -281,25 +408,30 @@
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft') {
-        previousImage();
+        previousImage(activeService);
       } else if (e.key === 'ArrowRight') {
-        nextImage();
+        nextImage(activeService);
+      } else if (e.key === '1') {
+        switchTab('starlink');
+      } else if (e.key === '2') {
+        switchTab('spidernet');
       }
     });
 
-    // Initialize display
-    updateDisplay();
-
-    // Preload images for better performance
+    // Initialize
     window.addEventListener('load', () => {
-      for (let i = 0; i < totalImages; i++) {
-        const img = document.getElementById(`image${i}`);
-        if (img && !img.complete) {
+      setupEventListeners();
+      updateDisplay('starlink');
+
+      // Preload all images
+      const allImages = document.querySelectorAll('.image-slide img');
+      allImages.forEach((img, index) => {
+        if (!img.complete) {
           img.addEventListener('load', () => {
-            console.log(`Image ${i} loaded`);
+            console.log(`Image ${index} loaded`);
           });
         }
-      }
+      });
     });
   </script>
 </body>
